@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>แอดมิน - ร้านพิซซ่า</title>
+<style>
+  :root{
+    --tomato:#c1372b; --tomato-dark:#912a21; --cheese:#f4b942;
+    --basil:#4b6043; --crust:#fff4dc; --crust-2:#f7e6bf;
+    --charcoal:#2c2117; --olive:#7c8b5e; --paper:#fffaf0;
+    --gray:#9ca3af; --blue:#2563eb;
+  }
+  *{box-sizing:border-box;}
+  body{ margin:0; font-family:sans-serif; background:var(--crust); color:var(--charcoal); padding:1rem; }
+  h1{ font-size:1.3rem; margin:0 0 0.6rem; }
+  h2{ font-size:1.05rem; margin:0 0 0.6rem; color:var(--tomato-dark); }
+  .login-box{ max-width:320px; margin:4rem auto; background:var(--paper); border-radius:14px; padding:1.5rem; box-shadow:0 4px 14px rgba(0,0,0,.15); text-align:center; }
+  .login-box input{ width:100%; padding:0.7rem; font-size:1.2rem; text-align:center; letter-spacing:4px; border:2px solid var(--crust-2); border-radius:10px; margin:1rem 0; }
+  .login-box button{ width:100%; padding:0.7rem; background:var(--tomato); color:#fff; border:none; border-radius:10px; font-weight:700; font-size:1rem; cursor:pointer; }
+  #dashboard{ display:none; max-width:100%; margin:0 auto; }
+  .refresh-note{ font-size:0.75rem; color:var(--olive); margin-bottom:0.8rem; }
+
+  .tabs{ display:flex; gap:0.5rem; margin-bottom:1rem; }
+  .tab-btn{
+    padding:0.6rem 1.1rem; border:2px solid var(--crust-2); background:var(--paper);
+    border-radius:10px; font-weight:700; font-size:0.85rem; cursor:pointer; color:var(--charcoal);
+  }
+  .tab-btn.active{ background:var(--tomato); border-color:var(--tomato-dark); color:#fff; }
+  .tab-page{ display:none; }
+  .tab-page.active{ display:block; }
+
+  .filter-bar{
+    display:flex; flex-wrap:wrap; gap:0.6rem; align-items:center;
+    background:var(--paper); border-radius:12px; padding:0.8rem;
+    margin-bottom:1rem;
+  }
+  .filter-bar input[type=text]{
+    padding:0.5rem 0.7rem; border:2px solid var(--crust-2); border-radius:8px; font-size:0.85rem; min-width:11rem;
+  }
+  .filter-bar select{ padding:0.5rem 0.7rem; border:2px solid var(--crust-2); border-radius:8px; font-size:0.85rem; }
+  .filter-bar input[type=date]{ padding:0.4rem 0.5rem; border:2px solid var(--crust-2); border-radius:8px; font-size:0.82rem; }
+  .filter-bar .fb-label{ font-size:0.75rem; font-weight:700; color:var(--olive); }
+  #customRangeWrap{ display:none; align-items:center; gap:0.4rem; }
+
+  .pivot-wrap{ overflow-x:auto; background:var(--paper); border-radius:12px; padding:0.6rem; }
+  table.pivot{ border-collapse:collapse; width:100%; }
+  table.pivot th, table.pivot td{ border:1px solid var(--crust-2); padding:0.5rem; vertical-align:top; font-size:0.82rem; }
+  table.pivot th{ background:var(--crust-2); white-space:nowrap; position:sticky; top:0; }
+  table.pivot th.row-col{ text-align:left; position:sticky; left:0; z-index:2; background:var(--cheese); }
+  table.pivot td.row-cell{ font-weight:700; white-space:nowrap; position:sticky; left:0; background:var(--crust-2); }
+  table.pivot td{ min-width:11rem; }
+
+  .oc{ background:var(--crust); border-radius:8px; padding:0.5rem; margin-bottom:0.4rem; }
+  .oc:last-child{ margin-bottom:0; }
+  .oc-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:0.25rem; }
+  .oc-head b{ font-family:monospace; font-size:0.85rem; }
+  .status-pill{ font-size:0.68rem; font-weight:700; padding:0.15rem 0.5rem; border-radius:8px; white-space:nowrap; }
+  .status-pill.pending{ background:var(--cheese); color:var(--charcoal); }
+  .status-pill.accepted{ background:var(--basil); color:#fff; }
+  .status-pill.rejected{ background:var(--gray); color:#fff; }
+  .oc-detail{ font-size:0.75rem; color:var(--charcoal); line-height:1.5; }
+  .oc-btns{ display:flex; gap:0.3rem; margin-top:0.35rem; }
+  .oc-btns button{ flex:1; padding:0.35rem; border:none; border-radius:6px; font-weight:700; font-size:0.72rem; cursor:pointer; }
+  .oc-accept-btn{ background:var(--basil); color:#fff; }
+  .oc-reject-btn{ background:var(--tomato); color:#fff; }
+  .oc-btns button:disabled{ background:var(--gray); cursor:not-allowed; }
+
+  .empty{ text-align:center; color:var(--olive); margin-top:3rem; }
+
+  .card{ background:var(--paper); border-radius:12px; padding:1rem; margin-bottom:1rem; }
+  .stat-grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(9rem,1fr)); gap:0.7rem; margin-bottom:1rem; }
+  .stat-box{ background:var(--crust-2); border-radius:10px; padding:0.7rem; text-align:center; }
+  .stat-box .sv{ font-family:monospace; font-weight:700; font-size:1.3rem; color:var(--tomato-dark); }
+  .stat-box .sl{ font-size:0.7rem; color:var(--olive); margin-top:0.2rem; }
+
+  .export-row{ display:flex; gap:0.6rem; flex-wrap:wrap; margin-bottom:1rem; }
+  .export-row button{ padding:0.6rem 1rem; border:none; border-radius:10px; font-weight:700; font-size:0.82rem; cursor:pointer; color:#fff; }
+  .export-png{ background:var(--blue); }
+  .export-csv{ background:var(--basil); }
+
+  #chartCanvas{ width:100%; max-width:640px; display:block; background:var(--paper); border-radius:10px; }
+
+  .add-cap-row{ display:flex; gap:0.5rem; margin-bottom:1rem; flex-wrap:wrap; }
+  .add-cap-row input{ padding:0.5rem; border:2px solid var(--crust-2); border-radius:8px; font-size:0.85rem; width:8rem; }
+  .add-cap-row button{ background:var(--tomato); color:#fff; border:none; border-radius:8px; padding:0.5rem 0.9rem; font-weight:700; cursor:pointer; }
+
+  .table-stock-row{ display:flex; align-items:center; gap:0.6rem; background:var(--crust-2); border-radius:10px; padding:0.6rem 0.8rem; margin-bottom:0.5rem; }
+  .table-stock-row .ts-num{ font-family:monospace; font-weight:700; font-size:1rem; min-width:3.2rem; }
+  .table-stock-row .ts-bar-wrap{ flex:1; background:var(--paper); border-radius:8px; height:0.9rem; overflow:hidden; }
+  .table-stock-row .ts-bar{ height:100%; border-radius:8px; }
+  .table-stock-row .ts-text{ font-size:0.75rem; white-space:nowrap; min-width:6rem; text-align:right; }
+  .table-stock-row .ts-edit{ width:4rem; padding:0.3rem; border:2px solid var(--paper); border-radius:6px; font-size:0.8rem; }
+  .table-stock-row .ts-save{ background:var(--basil); color:#fff; border:none; border-radius:6px; padding:0.3rem 0.6rem; font-size:0.72rem; cursor:pointer; }
+</style>
+</head>
+<body>
+
+<div class="login-box" id="loginBox">
+  <h1>🍕 แอดมิน</h1>
+  <input type="password" id="pinInput" placeholder="รหัส PIN" inputmode="numeric">
+  <button onclick="login()">เข้าสู่ระบบ</button>
+  <p id="loginError" style="color:var(--tomato-dark); font-size:0.8rem;"></p>
+</div>
+
+<div id="dashboard">
+  <h1>🍕 จัดการร้านพิซซ่า</h1>
+  <div class="refresh-note">รีเฟรชอัตโนมัติทุก 5 วินาที</div>
+
+  <div class="tabs">
+    <button class="tab-btn active" id="tabOrdersBtn" onclick="switchTab('orders')">📋 รายการออเดอร์</button>
+    <button class="tab-btn" id="tabStockBtn" onclick="switchTab('stock')">📦 สต็อก & บัญชี</button>
+  </div>
+
+  <div class="tab-page active" id="pageOrders">
+    <div class="filter-bar">
+      <span class="fb-label">🔍 ค้นหาเบอร์:</span>
+      <input type="text" id="phoneSearch" placeholder="พิมพ์เบอร์โทรลูกค้า...">
+
+      <span class="fb-label">📅 ช่วงเวลา:</span>
+      <select id="rangeSelect">
+        <option value="7">7 วันล่าสุด</option>
+        <option value="15">15 วันล่าสุด</option>
+        <option value="30">1 เดือนล่าสุด</option>
+        <option value="60">2 เดือนล่าสุด</option>
+        <option value="custom">กำหนดเอง</option>
+      </select>
+      <div id="customRangeWrap">
+        <input type="date" id="customFrom">
+        <span>ถึง</span>
+        <input type="date" id="customTo">
+      </div>
+    </div>
+
+    <div class="pivot-wrap">
+      <div id="pivotTable"></div>
+    </div>
+  </div>
+
+  <div class="tab-page" id="pageStock">
+
+    <div class="card">
+      <h2>📊 สุขภาพธุรกิจ</h2>
+      <div class="stat-grid" id="statGrid"></div>
+      <canvas id="chartCanvas" width="640" height="360"></canvas>
+      <div class="export-row">
+        <button class="export-png" onclick="downloadChartPng()">🖼️ ดาวน์โหลดรูปสรุป (PNG)</button>
+        <button class="export-csv" onclick="downloadCsv()">📊 ดาวน์โหลดข้อมูลบัญชี (CSV)</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>📦 สต็อกที่ว่างต่อโต๊ะ</h2>
+      <div class="add-cap-row">
+        <input type="text" id="newCapTable" placeholder="เลขโต๊ะ" maxlength="2">
+        <input type="number" id="newCapValue" placeholder="ที่นั่ง/ความจุ" min="1">
+        <button onclick="addCapacity()">+ ตั้งค่าโต๊ะ</button>
+      </div>
+      <div id="stockTableList"></div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+  const BACKEND_URL = 'https://pizza-lotto-backend-1.onrender.com'; // แก้เป็น URL จริงหลัง deploy
+  let adminPin = '';
+  let allOrders = [];
+  let currentTab = 'orders';
+
+  function login(){
+    const pin = document.getElementById('pinInput').value.trim();
+    if(!pin){ return; }
+    adminPin = pin;
+    refreshAll(true);
+  }
+
+  function switchTab(tab){
+    currentTab = tab;
+    document.getElementById('tabOrdersBtn').classList.toggle('active', tab==='orders');
+    document.getElementById('tabStockBtn').classList.toggle('active', tab==='stock');
+    document.getElementById('pageOrders').classList.toggle('active', tab==='orders');
+    document.getElementById('pageStock').classList.toggle('active', tab==='stock');
+    if(tab === 'stock'){ loadStockAndStats(); }
+  }
+
+  async function refreshAll(isLoginAttempt){
+    try{
+      const res = await fetch(`${BACKEND_URL}/api/shop/orders?pin=${encodeURIComponent(adminPin)}`);
+      if(res.status === 401){
+        if(isLoginAttempt) document.getElementById('loginError').textContent = 'รหัส PIN ไม่ถูกต้อง';
+        return;
+      }
+      allOrders = await res.json();
+      document.getElementById('loginBox').style.display = 'none';
+      document.getElementById('dashboard').style.display = 'block';
+      renderPivot();
+      if(currentTab === 'stock') loadStockAndStats();
+    }catch(err){
+      if(isLoginAttempt) document.getElementById('loginError').textContent = 'เชื่อมต่อ backend ไม่สำเร็จ';
+    }
+  }
+
+  document.getElementById('rangeSelect').addEventListener('change', (e)=>{
+    document.getElementById('customRangeWrap').style.display = e.target.value === 'custom' ? 'flex' : 'none';
+    renderPivot();
+  });
+  document.getElementById('customFrom').addEventListener('change', renderPivot);
+  document.getElementById('customTo').addEventListener('change', renderPivot);
+  document.getElementById('phoneSearch').addEventListener('input', renderPivot);
+
+  function getDateRange(){
+    const val = document.getElementById('rangeSelect').value;
+    if(val === 'custom'){
+      const from = document.getElementById('customFrom').value;
+      const to = document.getElementById('customTo').value;
+      return {
+        from: from ? new Date(from).getTime() : null,
+        to: to ? new Date(to).getTime() + 86400000 - 1 : null
+      };
+    }
+    const days = parseInt(val, 10);
+    return { from: Date.now() - days * 86400000, to: null };
+  }
+  function dateKey(o){ return new Date(o.createdAt).toISOString().slice(0,10); }
+
+  function renderPivot(){
+    const { from, to } = getDateRange();
+    const phoneQuery = document.getElementById('phoneSearch').value.trim();
+
+    const filtered = allOrders.filter(o=>{
+      const t = new Date(o.createdAt).getTime();
+      if(from && t < from) return false;
+      if(to && t > to) return false;
+      if(phoneQuery && !(o.phone||'').includes(phoneQuery)) return false;
+      return true;
+    });
+
+    const el = document.getElementById('pivotTable');
+    if(filtered.length === 0){
+      el.innerHTML = '<div class="empty">ไม่พบออเดอร์ในช่วงที่เลือก</div>';
+      return;
+    }
+
+    const dateKeys = [...new Set(filtered.map(dateKey))].sort((a,b)=> b.localeCompare(a));
+    const phones = [...new Set(filtered.map(o=>o.phone||'-'))];
+    const lastActivity = {};
+    filtered.forEach(o=>{ const p=o.phone||'-'; const t=new Date(o.createdAt).getTime(); if(!lastActivity[p]||t>lastActivity[p]) lastActivity[p]=t; });
+    phones.sort((a,b)=> lastActivity[b]-lastActivity[a]);
+
+    let html = '<table class="pivot"><thead><tr><th class="row-col">ลูกค้า (เบอร์โทร)</th>';
+    dateKeys.forEach(dk=>{
+      const sample = filtered.find(o=>dateKey(o)===dk);
+      html += `<th>${sample.date || dk}</th>`;
+    });
+    html += '</tr></thead><tbody>';
+
+    phones.forEach(p=>{
+      const custOrders = filtered.filter(o=>(o.phone||'-')===p);
+      const custName = custOrders[0].name || '-';
+      html += `<tr><td class="row-cell">${p}<br><span style="font-weight:400;color:var(--olive);">${custName}</span></td>`;
+      dateKeys.forEach(dk=>{
+        const cellOrders = custOrders.filter(o=>dateKey(o)===dk);
+        if(cellOrders.length === 0){ html += '<td></td>'; return; }
+        html += '<td>' + cellOrders.map(o=>{
+          const tablesTxt = (o.tables||[]).map(t=>`โต๊ะ ${t.table} ×${t.qty}`).join(', ');
+          const statusLabel = o.status==='accepted' ? '✅ รับแล้ว' : o.status==='rejected' ? '❌ ปฏิเสธแล้ว' : '🟡 รอรับ';
+          const resolved = o.status !== 'pending';
+          return `
+            <div class="oc">
+              <div class="oc-head"><b>#${o.orderNo}</b><span class="status-pill ${o.status}">${statusLabel}</span></div>
+              <div class="oc-detail">
+                ${tablesTxt}<br>
+                ${o.total || 0} บาท · ${o.time || ''}
+                ${o.notes ? `<br>หมายเหตุ: ${o.notes}` : ''}
+              </div>
+              <div class="oc-btns">
+                <button class="oc-accept-btn" ${resolved?'disabled':''} onclick="resolveOrder('${o.orderNo}','accept')">✅ รับ</button>
+                <button class="oc-reject-btn" ${resolved?'disabled':''} onclick="resolveOrder('${o.orderNo}','reject')">❌ ไม่รับ</button>
+              </div>
+            </div>
+          `;
+        }).join('') + '</td>';
+      });
+      html += '</tr>';
+    });
+    html += '</tbody></table>';
+    el.innerHTML = html;
+  }
+
+  async function resolveOrder(orderNo, action){
+    await fetch(`${BACKEND_URL}/api/shop/orders/${orderNo}/${action}?pin=${encodeURIComponent(adminPin)}`, { method:'POST' });
+    refreshAll(false);
+  }
+
+  let lastStats = null;
+  let lastUsage = null;
+
+  async function loadStockAndStats(){
+    try{
+      const [statsRes, usageRes] = await Promise.all([
+        fetch(`${BACKEND_URL}/api/shop/stats?pin=${encodeURIComponent(adminPin)}`),
+        fetch(`${BACKEND_URL}/api/shop/tables/usage?pin=${encodeURIComponent(adminPin)}`)
+      ]);
+      lastStats = await statsRes.json();
+      lastUsage = await usageRes.json();
+      renderStats();
+      renderStockList();
+    }catch(err){
+      // เดี๋ยวลองใหม่รอบถัดไปตาม auto-refresh
+    }
+  }
+
+  function renderStats(){
+    if(!lastStats) return;
+    const s = lastStats;
+    document.getElementById('statGrid').innerHTML = `
+      <div class="stat-box"><div class="sv">${s.totalOrders}</div><div class="sl">ออเดอร์ทั้งหมด</div></div>
+      <div class="stat-box"><div class="sv">${s.acceptedCount}</div><div class="sl">รับแล้ว</div></div>
+      <div class="stat-box"><div class="sv">${s.pendingCount}</div><div class="sl">รอยืนยัน</div></div>
+      <div class="stat-box"><div class="sv">${s.rejectedCount}</div><div class="sl">ปฏิเสธแล้ว</div></div>
+      <div class="stat-box"><div class="sv">${s.totalRevenue.toLocaleString('th-TH')}</div><div class="sl">รายได้รวม (บาท)</div></div>
+      <div class="stat-box"><div class="sv">${s.avgOrderValue.toLocaleString('th-TH')}</div><div class="sl">เฉลี่ย/ออเดอร์ (บาท)</div></div>
+    `;
+    drawChart();
+  }
+
+  function drawChart(){
+    const canvas = document.getElementById('chartCanvas');
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    ctx.fillStyle = '#fffaf0';
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle = '#2c2117';
+    ctx.font = 'bold 15px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('🍕 รายได้ย้อนหลัง 14 วัน', 16, 26);
+    ctx.font = '10px sans-serif';
+    ctx.fillStyle = '#7c8b5e';
+    ctx.fillText('สร้างเมื่อ ' + new Date().toLocaleString('th-TH'), 16, 42);
+
+    const days = [];
+    for(let i=13; i>=0; i--){
+      const d = new Date(Date.now() - i*86400000);
+      const key = d.toISOString().slice(0,10);
+      days.push({ label: (d.getMonth()+1)+'/'+d.getDate(), value: (lastStats.revenueByDay[key]||0) });
+    }
+    const max = Math.max(1, ...days.map(d=>d.value));
+    const chartX = 16, chartY = 60, chartW = canvas.width-32, chartH = 260;
+    const barW = chartW / days.length;
+
+    days.forEach((d,i)=>{
+      const barH = (d.value/max) * (chartH-30);
+      const bx = chartX + i*barW + barW*0.18;
+      const bw = barW*0.64;
+      const by = chartY + chartH - barH;
+      ctx.fillStyle = '#16a34a';
+      ctx.fillRect(bx, by, bw, barH);
+      ctx.fillStyle = '#2c2117';
+      ctx.font = '9px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(d.label, bx+bw/2, chartY+chartH+14);
+      if(d.value > 0){
+        ctx.fillText(d.value, bx+bw/2, by-4);
+      }
+    });
+    ctx.strokeStyle = '#7c8b5e';
+    ctx.beginPath();
+    ctx.moveTo(chartX, chartY+chartH);
+    ctx.lineTo(chartX+chartW, chartY+chartH);
+    ctx.stroke();
+  }
+
+  function downloadChartPng(){
+    const canvas = document.getElementById('chartCanvas');
+    canvas.toBlob(blob=>{
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = `pizza-shop-summary-${new Date().toISOString().slice(0,10)}.png`;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      setTimeout(()=>URL.revokeObjectURL(url), 3000);
+    });
+  }
+
+  function csvEscape(val){
+    const s = String(val ?? '');
+    if(/[",\n]/.test(s)) return '"' + s.replace(/"/g,'""') + '"';
+    return s;
+  }
+  function downloadCsv(){
+    const header = ['วันที่','เวลา','เลขออเดอร์','ชื่อ','เบอร์โทร','โต๊ะ','ยอดรวม','สถานะ','หมายเหตุ'];
+    const rows = allOrders.map(o=>{
+      const tablesTxt = (o.tables||[]).map(t=>`${t.table}x${t.qty}`).join(' ');
+      const statusTxt = o.status==='accepted' ? 'รับแล้ว' : o.status==='rejected' ? 'ปฏิเสธแล้ว' : 'รอยืนยัน';
+      return [o.date, o.time, o.orderNo, o.name, o.phone, tablesTxt, o.total, statusTxt, o.notes||''];
+    });
+    const csv = [header, ...rows].map(r=>r.map(csvEscape).join(',')).join('\n');
+    const blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8;'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `pizza-shop-orders-${new Date().toISOString().slice(0,10)}.csv`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(()=>URL.revokeObjectURL(url), 3000);
+  }
+
+  function renderStockList(){
+    const el = document.getElementById('stockTableList');
+    if(!lastUsage || Object.keys(lastUsage).length === 0){
+      el.innerHTML = '<div class="empty" style="margin-top:1rem;">ยังไม่มีข้อมูลโต๊ะ</div>';
+      return;
+    }
+    const tables = Object.keys(lastUsage).sort();
+    el.innerHTML = tables.map(t=>{
+      const u = lastUsage[t];
+      const pct = u.capacity > 0 ? Math.min(100, Math.round((u.used/u.capacity)*100)) : 0;
+      const hue = 130 - (130 * (pct/100));
+      return `
+        <div class="table-stock-row">
+          <div class="ts-num">โต๊ะ ${t}</div>
+          <div class="ts-bar-wrap"><div class="ts-bar" style="width:${pct}%; background:hsl(${hue},60%,45%);"></div></div>
+          <div class="ts-text">${u.used}/${u.capacity} (เหลือ ${u.remaining})</div>
+          <input type="number" class="ts-edit" id="cap-${t}" placeholder="${u.capacity}" min="1">
+          <button class="ts-save" onclick="saveCapacity('${t}')">บันทึก</button>
+        </div>
+      `;
+    }).join('');
+  }
+
+  async function addCapacity(){
+    const table = document.getElementById('newCapTable').value.trim();
+    const capacity = document.getElementById('newCapValue').value.trim();
+    if(!table || !capacity){ alert('กรอกเลขโต๊ะและความจุก่อนครับ'); return; }
+    await fetch(`${BACKEND_URL}/api/shop/tables/capacity?pin=${encodeURIComponent(adminPin)}`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ table, capacity })
+    });
+    document.getElementById('newCapTable').value = '';
+    document.getElementById('newCapValue').value = '';
+    loadStockAndStats();
+  }
+  async function saveCapacity(table){
+    const val = document.getElementById(`cap-${table}`).value.trim();
+    if(!val) return;
+    await fetch(`${BACKEND_URL}/api/shop/tables/capacity?pin=${encodeURIComponent(adminPin)}`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ table, capacity: val })
+    });
+    loadStockAndStats();
+  }
+
+  setInterval(()=>{ if(adminPin) refreshAll(false); }, 5000);
+</script>
+
+</body>
+</html>
